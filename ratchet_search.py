@@ -1,5 +1,5 @@
 from astar import AStar
-from ratchet_queue2 import RatchetState, RatchetNode
+from ratchet_queue import RatchetState, RatchetNode
 import pandas as pd
 import math
 import copy
@@ -18,7 +18,6 @@ class RatchetSearch(AStar):
         dropped = rc.get_dropped()
         drops_needed = self.goal - len(dropped)
         heuristic_score = rc.next_k_cost(drops_needed)
-        print(f'heuristic_score {heuristic_score}')
         return heuristic_score
 
     def is_goal_reached(self, rc: RatchetState, _):
@@ -45,24 +44,25 @@ class RatchetSearch(AStar):
         """
 
         neighbors = []
+        expanders = [] # Avoid duplicates
         for dim in range(len(self.weights)):
             expander = rc.relax_boundary_node(dim)
-            if expander is not None:
+            if expander is not None and expander not in expanders:
                 new_rs = copy.copy(rc)
-                print(f'boundary: {dim}')
                 new_rs.filter_node(expander)
                 neighbors.append(new_rs)
+                expanders.append(expander)
         # If no other way to expand, go geometric
         if len(neighbors) == 0:
             new_rs = copy.copy(rc)
             expander = rc.relax_boundary_node(-1)
-            print(f'boundary: next')
-            new_rs.filter_node(expander)
-            neighbors.append(new_rs)
+            if expander not in expanders:
+                new_rs.filter_node(expander)
+                neighbors.append(new_rs)
 
         return neighbors
 
     def search(self):
         path = self.astar(self.initial, None)
         rc_final = list(path)[-1]
-        return rc_final.get_dropped()
+        return rc_final._boundary, rc_final.get_dropped()
