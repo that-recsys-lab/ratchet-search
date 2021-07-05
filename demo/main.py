@@ -21,10 +21,10 @@ def read_args():
 
 def run_3d_demo(data):
     dropped = search_3d(data, 20, (1.0, 1.0, 1.0))
-    dropped.to_csv("selected-3d-1.csv", index=False)
+    dropped.to_csv("demo-3d-selected.csv", index=False)
 
     dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
-    dropped.to_csv("selected-3d-2.csv", index=False)
+    dropped.to_csv("demo-3d-selected-weights.csv", index=False)
 
 
 def search_3d(data, list_length, weights):
@@ -48,9 +48,9 @@ def search_3d(data, list_length, weights):
 
 def run_2d_demo(data):
     dropped = search_2d(data, 20, (1.0, 1.0))
-    dropped.to_csv("selected-2d-1.csv", index=False)
+    dropped.to_csv("demo-2d-selected.csv", index=False)
     dropped = search_2d(data, 20, (4.0, 1.0))
-    dropped.to_csv("selected-2d-2.csv", index=False)
+    dropped.to_csv("demo-2d-selected-weights.csv", index=False)
 
 
 def search_2d(data, list_length, weights):
@@ -58,7 +58,7 @@ def search_2d(data, list_length, weights):
 
     search = RatchetSearch(data2d, weights, list_length)
 
-    ans = search.search()
+    boundary, ans = search.search()
     print("The following nodes will be dropped:")
     for node in ans:
         print(node)
@@ -75,11 +75,12 @@ def search_2d(data, list_length, weights):
 if __name__ == '__main__':
     args = read_args()
 
-    data_file = "test-data2.csv"
+    data_file = "demo-data.csv"
     data = pd.read_csv(data_file)
     data['ID'] = data['ID'].astype('int')
 
     if args['threed'] or args['all']:
         run_3d_demo(data)
-    else:
+
+    if not args['threed']:
         run_2d_demo(data)

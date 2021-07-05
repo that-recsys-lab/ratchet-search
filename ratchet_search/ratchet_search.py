@@ -1,5 +1,5 @@
 from astar import AStar
-from ratchet_queue import RatchetState, RatchetNode
+from .ratchet_queue import RatchetState, RatchetNode
 import pandas as pd
 import math
 import copy
@@ -65,4 +65,4 @@ class RatchetSearch(AStar):
     def search(self):
         path = self.astar(self.initial, None)
         rc_final = list(path)[-1]
-        return rc_final._boundary, rc_final.get_dropped()
+        return list(rc_final._boundary.limits), rc_final.get_dropped()

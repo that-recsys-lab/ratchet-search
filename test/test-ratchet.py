@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-import ratchet_queue as rq
+from ratchet_search import ratchet_queue as rq
 import numpy as np
 
 
