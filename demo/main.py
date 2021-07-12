@@ -23,8 +23,8 @@ def run_3d_demo(data):
     dropped = search_3d(data, 20, (1.0, 1.0, 1.0))
     dropped.to_csv("demo-3d-selected.csv", index=False)
 
-#    dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
-#    dropped.to_csv("demo-3d-selected-weights.csv", index=False)
+    dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
+    dropped.to_csv("demo-3d-selected-weights.csv", index=False)
 
 
 def search_3d(data, list_length, weights):
@@ -47,8 +47,10 @@ def search_3d(data, list_length, weights):
 
 
 def run_2d_demo(data):
+    print("Running 2d search with <1, 1> shape")
     dropped = search_2d(data, 20, (1.0, 1.0))
     dropped.to_csv("demo-2d-selected.csv", index=False)
+    print("Running 2d search with <4, 1> shape")
     dropped = search_2d(data, 20, (4.0, 1.0))
     dropped.to_csv("demo-2d-selected-weights.csv", index=False)
 
@@ -59,6 +61,8 @@ def search_2d(data, list_length, weights):
     search = RatchetSearch(data2d, weights, list_length)
 
     boundary, ans = search.search()
+    print(f"Boundary is {boundary}")
+    print(f"Shape difference: {search.final_state.score_dropped()}")
     print("The following nodes will be dropped:")
     for node in ans:
         print(node)

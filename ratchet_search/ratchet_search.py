@@ -1,11 +1,10 @@
 from astar import AStar
 from .ratchet_queue import RatchetState, RatchetNode
 import pandas as pd
+import numpy as np
 import math
 import copy
 from itertools import chain, combinations
-
-prior_states_seen = {}
 
 def powerset(iterable):
     """
@@ -17,19 +16,27 @@ def powerset(iterable):
 
 class RatchetSearch(AStar):
 
-    def __init__(self, data: pd.DataFrame, weights: tuple, goal_count):
+    def __init__(self, data: pd.DataFrame, shape: tuple, goal_count):
         self.data = data
-        self.initial = RatchetState(self.data, weights)
-        self.weights = weights
+        self.goal_shape = self.normalize_shape(shape)
+        self.initial = RatchetState(self.data, self.goal_shape)
         self.goal = goal_count
+        self.prior_states_seen = {}
+
+    def normalize_shape(self, shape: tuple):
+        shape_fl = [float(val) for val in shape]
+        sh_array = np.array(shape_fl)
+        return sh_array/np.linalg.norm(sh_array)
 
     def heuristic_cost_estimate(self, rc: RatchetState, _):
-        """minimum cost if only lowest scoring items are returned"""
-        dropped = rc.get_dropped()
-        drops_needed = self.goal - len(dropped)
-        heuristic_score = rc.next_k_cost(drops_needed)
-        return heuristic_score
+        """Assume additive distortion"""
+        #heuristic_score = rc.next_k_cost(self.drops_to_goal(rc))
+        #return heuristic_score
+        return 0
 
+    def drops_to_goal(self, rs: RatchetState):
+        dropped = rs.get_dropped()
+        return self.goal - len(dropped)
 
     def is_goal_reached(self, rc: RatchetState, _):
         current_drop = rc.get_dropped()
@@ -44,8 +51,8 @@ class RatchetSearch(AStar):
             return math.inf
        # Otherwise the cost is the difference between the scores of the two dropped lists.
        else:
-            score1 = rc1.score_dropped()
-            score2 = rc2.score_dropped()
+            score1 = rc1.score_dropped()/(self.drops_to_goal(rc1)+1)
+            score2 = rc2.score_dropped()/(self.drops_to_goal(rc2)+1)
             return score2 - score1
 
     def neighbors(self, rc: RatchetState):
@@ -55,7 +62,7 @@ class RatchetSearch(AStar):
         """
 
         expanders = [] # Avoid duplicates
-        for dim in range(len(self.weights)):
+        for dim in range(len(self.goal_shape)):
             expander = rc.relax_boundary_node(dim)
             if expander is not None and expander not in expanders:
                 expanders.append(expander)
@@ -77,12 +84,12 @@ class RatchetSearch(AStar):
         # Ensures unique boundaries
         neighbor_dict = {}
         for rs in next_rs_list:
-            if rs.get_boundary() not in prior_states_seen:
+            if rs.get_boundary() not in self.prior_states_seen:
                 neighbor_dict[rs.get_boundary()] = rs
 
         neighbors = []
         for rs in neighbor_dict.values():
-            prior_states_seen[rs.get_boundary()] = rs
+            self.prior_states_seen[rs.get_boundary()] = rs
 
             rs.filter()
             # No need to add nodes that are failures
@@ -98,7 +105,7 @@ class RatchetSearch(AStar):
 
             if expander not in expanders:
                 new_rs.update_boundary([expander])
-                prior_states_seen[new_rs.get_boundary()] = new_rs
+                self.prior_states_seen[new_rs.get_boundary()] = new_rs
                 new_rs.filter()
                 neighbors.append(new_rs)
 
@@ -106,5 +113,5 @@ class RatchetSearch(AStar):
 
     def search(self):
         path = self.astar(self.initial, None)
-        rc_final = list(path)[-1]
-        return list(rc_final._boundary.limits), rc_final.get_dropped()
+        self.final_state =  list(path)[-1]
+        return list(self.final_state._boundary.limits), self.final_state.get_dropped()

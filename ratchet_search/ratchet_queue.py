@@ -23,6 +23,23 @@ def chebyshev_wt(arr: np.ndarray, weights=None):
         weights = np.linalg.norm(arr)
     chval = (arr*weights).max()
 
+def enclosing_bounds(points: List[np.ndarray]):
+    arr = np.column_stack(points)
+    return np.amax(arr, axis=1)
+
+def shape_diff(arr: np.ndarray, shape: np.ndarray):
+    """
+    Computes the shape difference
+    :param arr: Arbitrary shape
+    :param shape: Normalized shape descriptor
+    :return: Difference in shape
+    """
+    arr_mag = np.linalg.norm(arr)
+    if arr_mag > 0:
+        arr = arr / arr_mag
+    diff = arr - shape
+    return np.linalg.norm(diff)
+
 class BoundingBox:
 
     # Can be initialized with a list of nodes, a list of points, or a list of values
@@ -92,6 +109,15 @@ class BoundingBox:
         new_box.set_limits(np.maximum(self.limits, point))
         return new_box
 
+    def compare_shape(self, shape: np.ndarray):
+        """
+        Two shapes are the same if they are geometrically similar.
+        If they aren't, we look at the magnitude of the difference of the ratios.
+        :param shape_box:
+        :return:
+        """
+        return shape_diff(self.limits, shape)
+
 class RatchetNode:
 
     def __init__(self, id: int, features: tuple):
@@ -113,14 +139,22 @@ class RatchetNode:
         return self._mag
 
     # Might be better to cache this, too. The weights don't change.
-    def score(self, weights: np.ndarray):
+    def score(self, shape: np.ndarray):
         if self._score is None:
-            self._score = np.sqrt((weights *  self.features * self.features).sum())
+            self._score = shape_diff(self.features, shape)
         return self._score
 
     @staticmethod
-    def score_list(lst: List[RatchetNode], weights: np.ndarray):
-        return sum([node.score(weights) for node in lst])
+    def score_list_rough(lst: List[RatchetNode], shape: np.ndarray):
+        return sum([node.score(shape) for node in lst])
+
+    @staticmethod
+    def score_list_exact(lst: List[RatchetNode], shape: np.ndarray):
+        if len(lst) > 0:
+            bounds = enclosing_bounds([node.features for node in lst])
+        else:
+            bounds = np.full(len(shape), 0)
+        return shape_diff(bounds, shape)
 
 class RatchetQueue:
 
@@ -213,11 +247,11 @@ class RatchetState:
     # <id, f1, f2, ..., fk>
     # ids must be integers
     # features must be numeric
-    def __init__(self, df: pd.DataFrame, weights: tuple):
+    def __init__(self, df: pd.DataFrame, shape: np.ndarray):
         self._queue: RatchetQueue = RatchetQueue()
         self._dropped: List[RatchetNode] = []
-        self._weights: np.ndarray = np.array(weights)
-        self._boundary: BoundingBox = BoundingBox(len(weights)) # scalar version produces infinite bounds
+        self._shape: np.ndarray = shape
+        self._boundary: BoundingBox = BoundingBox(len(shape)) # scalar version produces infinite bounds
 
         for id, row in df.iterrows():
             id = row[0]
@@ -232,7 +266,7 @@ class RatchetState:
         result: RatchetState = cls.__new__(cls)
         result._queue = copy.copy(self._queue)
         result._dropped = self._dropped.copy()
-        result._weights = self._weights
+        result._shape = self._shape
         result._boundary = copy.copy(self._boundary)
         return result
 
@@ -253,7 +287,7 @@ class RatchetState:
         to_drop = self.ratchet()
         self.clank(to_drop)
 
-    def update_boundary(self, nodes: Tuple[RatchetNode]):
+    def update_boundary(self, nodes: List[RatchetNode]):
         for node in nodes:
             features = node.features
             self._boundary = self._boundary.relax_point(features)
@@ -266,13 +300,13 @@ class RatchetState:
 
     def next_k_cost(self, k):
         the_queue = self._queue.get_queue()
-        return sum([node.score(self._weights) for node in the_queue[0:k]])
+        return RatchetNode.score_list_rough(the_queue[0:k], self._shape)
 
     def get_dropped(self):
         return self._dropped
 
     def score_dropped(self):
-        return RatchetNode.score_list(self.get_dropped(), self._weights)
+        return RatchetNode.score_list_exact(self.get_dropped(), self._shape)
 
     def get_boundary(self):
         return self._boundary
