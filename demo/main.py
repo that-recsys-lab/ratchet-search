@@ -23,8 +23,8 @@ def run_3d_demo(data):
     dropped = search_3d(data, 20, (1.0, 1.0, 1.0))
     dropped.to_csv("demo-3d-selected.csv", index=False)
 
-    dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
-    dropped.to_csv("demo-3d-selected-weights.csv", index=False)
+#    dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
+#    dropped.to_csv("demo-3d-selected-weights.csv", index=False)
 
 
 def search_3d(data, list_length, weights):

@@ -9,4 +9,19 @@ The output of the search is the dimensions of the bounding box, such that exactl
 
 The code makes use of the `AStar` library from Julien Rialland. 
 
+# New idea
+
+Input is a "shape" and the final boundary should be proportional to this shape:
+
+d0, ... dn
+
+f0, ... fn
+
+normalize d so that the shortest side is length 1.
+
+f0/d'0, ... fn/d'n
+
+Each of these ratios should be the same. Calculate variance of ratios. 
+
+The problem is that there isn't a good heuristic for this. 
  
