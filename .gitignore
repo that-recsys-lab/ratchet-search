@@ -117,3 +117,9 @@ dmypy.json
 .idea/csv-plugin.xml
 .DS_Store
 .idea/csv-plugin.xml
+<<<<<<< Updated upstream
+=======
+.DS_Store
+.idea/csv-plugin.xml
+.idea/csv-plugin.xml
+>>>>>>> Stashed changes
