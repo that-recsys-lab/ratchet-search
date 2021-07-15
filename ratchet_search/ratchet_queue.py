@@ -8,10 +8,12 @@ import numpy as np
 
 from typing import Tuple, List
 
-def magnitude(arr: np.ndarray, weights=None):
-    if weights is None:
+def magnitude(arr: np.ndarray, selector=None):
+    if selector is None:
         return np.linalg.norm(arr)
-    return euclidean(arr, weights)
+    else:
+        sel = arr[list(selector)]
+        return np.linalg.norm(sel)
  #   return chebyshev_wt(lst, weights)
 
 def euclidean(arr: np.ndarray, weights):
@@ -100,7 +102,10 @@ class BoundingBox:
 
     def relax_dim(self, dim):
         new_box = copy.copy(self)
-        new_box.limits[dim] = np.inf
+        if type(dim) is not tuple:
+            dim = [dim]
+        for dim_entry in dim:
+            new_box.limits[dim_entry] = np.inf
         new_box.mag = np.inf
         return new_box
 
@@ -144,17 +149,23 @@ class RatchetNode:
             self._score = shape_diff(self.features, shape)
         return self._score
 
-    @staticmethod
-    def score_list_rough(lst: List[RatchetNode], shape: np.ndarray):
-        return sum([node.score(shape) for node in lst])
+    # @staticmethod
+    # def score_list_rough(lst: List[RatchetNode], shape: np.ndarray):
+    #     return sum([node.score(shape) for node in lst])
 
     @staticmethod
     def score_list_exact(lst: List[RatchetNode], shape: np.ndarray):
         if len(lst) > 0:
-            bounds = enclosing_bounds([node.features for node in lst])
+            bounds = RatchetNode.nodes_to_bounds(lst)
         else:
             bounds = np.full(len(shape), 0)
         return shape_diff(bounds, shape)
+
+    @staticmethod
+    def nodes_to_bounds(lst: List[RatchetNode]):
+        return enclosing_bounds([node.features for node in lst])
+
+
 
 class RatchetQueue:
 
@@ -228,7 +239,8 @@ class RatchetQueue:
 
         new_box = boundary.relax_point(close_node.features)
         local_node_gen = self.boundary_iterator(new_box)
-        return min(local_node_gen, key=lambda node: node.features[dim])
+        # dim is used as a selector for which features to use
+        return min(local_node_gen, key=lambda node: magnitude(node.features, dim))
 
     def calc_ratchet(self, boundary: BoundingBox):
         # bound_distsq = pow(sum([f*f for f in boundary]), 0.5)
@@ -292,11 +304,8 @@ class RatchetState:
             features = node.features
             self._boundary = self._boundary.relax_point(features)
 
-    def relax_boundary_node(self, dim=-1):
-        if dim < 0:
-            return self._queue.get_next(dim, None)
-        else:
-            return self._queue.get_next(dim, self._boundary)
+    def relax_boundary_node(self, dim):
+        return self._queue.get_next(dim, self._boundary)
 
     def next_k_cost(self, k):
         the_queue = self._queue.get_queue()
