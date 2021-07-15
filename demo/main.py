@@ -1,4 +1,4 @@
-from ratchet_search import RatchetSearch
+from ratchet_search import BinarySpaceSearch
 import pandas as pd
 import argparse
 
@@ -18,33 +18,30 @@ def read_args():
     input_args = parser.parse_args()
     return vars(input_args)
 
+def nodes2df (nodes, labels):
+    frames = []
+    for node in nodes:
+        row_dict = {}
+        row_dict[labels[0]] = node.id
+        for i in range(0, len(node.features)):
+            row_dict[labels[i+1]] = node.features[i]
+        frames.append(pd.DataFrame(row_dict, index=[0]))
+    return pd.concat(frames, ignore_index=True)
 
 def run_3d_demo(data):
+    print("Running 3d search with <1, 1, 1> shape")
     dropped = search_3d(data, 20, (1.0, 1.0, 1.0))
     dropped.to_csv("demo-3d-selected.csv", index=False)
 
+    print("Running 3d search with <4, 2, 1> shape")
     dropped = search_3d(data, 20, (4.0, 2.0, 1.0))
     dropped.to_csv("demo-3d-selected-weights.csv", index=False)
 
-
-def search_3d(data, list_length, weights):
-    search = RatchetSearch(data, weights, list_length)
-
-    boundary, nodes = search.search()
+def search_3d(data, list_length, shape):
+    search = BinarySpaceSearch(data, shape, list_length)
+    boundary = search.search()
     print(f"Boundary is {boundary}")
-    print("The following nodes will be dropped:")
-    for node in nodes:
-        print(node)
-
-    id = [node.id for node in nodes]
-    x1 = [node.features[0] for node in nodes]
-    x2 = [node.features[1] for node in nodes]
-    x3 = [node.features[2] for node in nodes]
-
-    df = pd.DataFrame({'ID': id, 'X1': x1, 'X2': x2, 'X3': x3})
-
-    return df
-
+    return nodes2df(search.enclosed, data.columns)
 
 def run_2d_demo(data):
     print("Running 2d search with <1, 1> shape")
@@ -54,25 +51,12 @@ def run_2d_demo(data):
     dropped = search_2d(data, 20, (4.0, 1.0))
     dropped.to_csv("demo-2d-selected-weights.csv", index=False)
 
-
-def search_2d(data, list_length, weights):
+def search_2d(data, list_length, shape):
     data2d = data[['ID', 'X1', 'X2']]
-
-    search = RatchetSearch(data2d, weights, list_length)
-
-    boundary, ans = search.search()
+    search = BinarySpaceSearch(data2d, shape, list_length)
+    boundary = search.search()
     print(f"Boundary is {boundary}")
-    print(f"Shape difference: {search.final_state.score_dropped()}")
-    print("The following nodes will be dropped:")
-    for node in ans:
-        print(node)
-
-    id = [node.id for node in ans]
-    x1 = [node.features[0] for node in ans]
-    x2 = [node.features[1] for node in ans]
-
-    df = pd.DataFrame({'ID': id, 'X1': x1, 'X2': x2})
-
+    df = nodes2df(search.enclosed, ['ID', 'X1', 'X2'])
     return df
 
 
