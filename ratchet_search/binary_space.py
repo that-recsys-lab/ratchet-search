@@ -1,4 +1,4 @@
-from .ratchet_queue import RatchetState, RatchetNode, enclosing_bounds, BoundingBox
+from .ratchet_queue import RatchetNode, BoundingBox
 import numpy as np
 import pandas as pd
 
@@ -46,6 +46,7 @@ class BinarySpaceSearch:
     def search(self):
         while True:
             changed = self.update_enclosed()
+            # print(f'Boundary {self.shape * self.scale_factor} Nodes {len(self.enclosed)}')
             if len(self.enclosed) == self.goal:
                 return self.shape * self.scale_factor
             elif changed == 0 and self.iteration > 20:

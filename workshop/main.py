@@ -1,4 +1,4 @@
-from ratchet_search import RatchetSearch, RatchetNode, BoundingBox, shape_diff
+from ratchet_search import BinarySpaceSearch
 import pandas as pd
 import numpy as np
 import os
@@ -12,9 +12,11 @@ if __name__ == '__main__':
     #min_hp = top_hp['yes_hp_en'].min()
     #top_hp['yes_hp_en'] = top_hp['yes_hp_en'] - min_hp
     #shape = (0.415, 0.715, 0.230)
-    shape = (1.0, 10.0, 4.0)
-    search = RatchetSearch(top_hp, shape, 18)
-    boundary, dist, ans = search.search()
+    #shape = (7, 12, 3.8)
+    shape = (8, 14, 4.5)
+    #shape = (1.0, 10.0, 4.0)
+    search = BinarySpaceSearch(top_hp, shape, 18)
+    boundary = search.search()
 
     # 0.415, 0.715, 0.230
     #boundary[0] += min_hp
@@ -28,7 +30,6 @@ if __name__ == '__main__':
 
     print(f'Shape: {shape}')
     print(f'Boundary: {boundary}')
-    print(f'Shape diff: {dist}')
 
     # best_box = BoundingBox(np.array([0.415, 0.715, 0.230]))
     # search = RatchetSearch(top_hp, (1.0, 1.0, 1.0), 18)
