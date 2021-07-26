@@ -1,5 +1,5 @@
 # ratchet-search
-Robin Burke, Ian Burke, Goran Kulyanin
+Robin Burke, Ian Burke, Goran Kuljanin
 
 Ratchet search is a special case of a n-dimensional range query. In this case, we specify an n-dimensional rectangular shape and a number of points, k. The search process returns a boundary such that (a) exactly k points are contained, and (b) the boundary is proportional to the input shape. 
 
